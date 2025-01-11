@@ -23,6 +23,8 @@
 #include <functional>
 #include <kahypar/io/sql_plottools_serializer.h>
 #include <kahypar/partition/context.h>
+#include <stdexcept>
+#include <string>
 
 namespace kahypar {
 class SerializeOnSignal {
@@ -33,7 +35,7 @@ class SerializeOnSignal {
   static void serialize(int signal) {
     if (context_p->partition.sp_process_output)
       io::serializer::serialize(*context_p, *hypergraph_p, std::chrono::duration<double>(420.0), 0, true);
-    std::exit(signal);
+    throw std::runtime_error("Signal received: " + std::to_string(signal));
   }
 
   static void initialize(Hypergraph& hg, Context& c, bool register_default_signals = true) {

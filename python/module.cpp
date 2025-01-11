@@ -22,10 +22,14 @@
 #include <pybind11/pybind11.h>
 
 #include <pybind11/stl.h>
+#include <pybind11/numpy.h>
 
+#include <sstream>
+#include <stdexcept>
 #include <string>
 #include <vector>
 
+#include "kahypar-resources/definitions.h"
 #include "kahypar/definitions.h"
 
 #include "kahypar/partition/context.h"
@@ -35,14 +39,15 @@
 #include "kahypar/datastructure/connectivity_sets.h"
 #include "kahypar/partition/metrics.h"
 
-void hello(const std::string& input) {
-  std::cout << input << std::endl;
+struct ContextWrapper {
+  kahypar::Context * ctx;
+};
+void partition(kahypar::Hypergraph& hypergraph,
+               ContextWrapper context) {
+  kahypar::PartitionerFacade().partition(hypergraph, *context.ctx);
 }
 
-void partition(kahypar::Hypergraph& hypergraph,
-               kahypar::Context& context) {
-  kahypar::PartitionerFacade().partition(hypergraph, context);
-}
+namespace py = pybind11;
 
 namespace bind {
   using kahypar::Hypergraph;
@@ -81,6 +86,106 @@ Hypergraph createUnweightedHypergraph(const HypernodeID num_nodes, const Hypered
   return createWeightedHypergraph(num_nodes, num_edges, index_vector, edge_vector, k, {}, {});
 }
 
+template<typename T>
+std::vector<T> toVector(const py::array_t<T, py::array::c_style | py::array::forcecast>& array) {
+  if(array.ndim() != 1) {
+    throw std::runtime_error("Array dimension must be 1");
+  }
+  std::vector<T> result;
+  size_t size = array.shape()[0];
+  result.reserve(size);
+  for(size_t i = 0; i < size; i++) {
+    result.push_back(array.at(i));
+  }
+  return result;
+}
+
+template<typename T>
+py::array_t<T> toNumpy(const std::vector<T> & vec) {
+  auto res = py::array_t<T>(vec.size());
+  for(size_t i = 0, e = vec.size(); i < e; i++) {
+    res.mutable_at(i) = vec[i];
+  }
+  return res;
+}
+
+Hypergraph createUnweightedHypergraphFromNumpy(
+  const HypernodeID num_nodes, const HyperedgeID num_edges,
+  const py::array_t<size_t, py::array::c_style | py::array::forcecast>& index_vector,
+  const py::array_t<kahypar::HypernodeID, py::array::c_style | py::array::forcecast>& edge_vector,
+  const PartitionID k
+) {
+  return createUnweightedHypergraph(
+    num_nodes, num_edges,
+    toVector(index_vector),
+    toVector(edge_vector),
+    k
+  );
+}
+
+Hypergraph createWeightedHypergraphFromNumpy(
+  const HypernodeID num_nodes, const HyperedgeID num_edges,
+  const py::array_t<size_t, py::array::c_style | py::array::forcecast>& index_vector,
+  const py::array_t<kahypar::HypernodeID, py::array::c_style | py::array::forcecast>& edge_vector,
+  const PartitionID k,
+  const py::array_t<kahypar::HyperedgeWeight, py::array::c_style | py::array::forcecast>& edge_weights,
+  const py::array_t<kahypar::HypernodeWeight, py::array::c_style | py::array::forcecast>& node_weights
+) {
+  return createWeightedHypergraph(
+    num_nodes, num_edges,
+    toVector(index_vector),
+    toVector(edge_vector),
+    k,
+    toVector(edge_weights),
+    toVector(node_weights)
+  );
+}
+
+std::string loadConfigFile(std::string name) {
+    py::module importlib_resources = py::module::import("importlib.resources");
+    auto res = importlib_resources.attr("files")("kahypar_kgraph")
+      .attr("joinpath")("config")
+      .attr("joinpath")(name)
+      .attr("read_text")();
+    return py::str(res);
+}
+
+void loadContextPreset(ContextWrapper &c, std::string name) {
+  auto content = bind::loadConfigFile(name + ".ini");
+  std::stringstream ss;
+  ss << content;
+  kahypar::parseIniContent(*c.ctx, ss);
+}
+
+ContextWrapper createContext(PartitionID k, double epsilon, std::optional<std::string> preset, std::optional<std::string> ini_file, std::optional<std::string> ini_content, bool verbose) {
+  if(!preset && !ini_file && !ini_content) {
+    throw std::runtime_error("Need `preset` or `ini_file` or `ini_content`");
+  }
+  auto * res = new kahypar::Context();
+  if(preset) {
+    auto content = bind::loadConfigFile(*preset + ".ini");
+    std::stringstream ss;
+    ss << content;
+    kahypar::parseIniContent(*res, ss);
+  }
+  if(ini_file) {
+    parseIniToContext(*res, *ini_file);
+  }
+  if(ini_content) {
+    std::stringstream ss;
+    ss << *ini_content;
+    kahypar::parseIniContent(*res, ss);
+  }
+  res->partition.k = k;
+  res->partition.epsilon = epsilon;
+  if(verbose) {
+    res->partition.quiet_mode = false;
+  } else {
+    res->partition.quiet_mode = true;
+  }
+  return ContextWrapper{res};
+}
+
 } // namespace bind
 
 
@@ -99,7 +204,7 @@ PYBIND11_MODULE(kahypar_kgraph, m) {
 
   py::class_<Hypergraph>(
       m, "Hypergraph")
-      .def(py::init(&bind::createUnweightedHypergraph),R"pbdoc(
+      .def(py::init(&bind::createUnweightedHypergraphFromNumpy),R"pbdoc(
 Construct an unweighted hypergraph.
 
 :param HypernodeID num_nodes: Number of nodes
@@ -114,7 +219,7 @@ Construct an unweighted hypergraph.
            py::arg("index_vector"),
            py::arg("edge_vector"),
            py::arg("k"))
-       .def(py::init(&bind::createWeightedHypergraph),R"pbdoc(
+      .def(py::init(&bind::createWeightedHypergraphFromNumpy),R"pbdoc(
 Construct a hypergraph with node and edge weights.
 
 If only one type of weights is required, the other argument has to be an empty list.
@@ -183,6 +288,12 @@ If only one type of weights is required, the other argument has to be an empty l
       .def("fixNodeToBlock", &Hypergraph::setFixedVertex,
         "Fix node to the cooresponding block",
         py::arg("node"), py::arg("block"))
+      .def("setFixedBlockIds", [](Hypergraph &h, py::array_t<PartitionID, py::array::c_style | py::array::forcecast> _ids) {
+        auto ids = bind::toVector(_ids);
+        for(size_t i = 0, e = ids.size(); i < e; i++) {
+          if(ids[i] != -1) h.setFixedVertex(i, ids[i]);
+        }
+      })
       .def("numFixedNodes", &Hypergraph::numFixedVertices,
         "Get the number of fixed nodes in the hypergraph")
       .def("containsFixedNodex", &Hypergraph::containsFixedVertices,
@@ -190,12 +301,30 @@ If only one type of weights is required, the other argument has to be an empty l
       .def("isFixedNode", &Hypergraph::isFixedVertex,
         "Return true if the node is fixed to a block",
         py::arg("node"))
+      // .def("nodes", [](Hypergraph &h) {
+      //     return py::make_iterator(h.nodes().first,h.nodes().second);}, py::keep_alive<0, 1>(),
+      //   "Iterate over all nodes")
+      // .def("edges", [](Hypergraph &h) {
+      //     return py::make_iterator(h.edges().first,h.edges().second);}, py::keep_alive<0, 1>(),
+      //   "Iterate over all hyperedges")
       .def("nodes", [](Hypergraph &h) {
-          return py::make_iterator(h.nodes().first,h.nodes().second);}, py::keep_alive<0, 1>(),
-        "Iterate over all nodes")
+        auto [begin, end] = h.nodes();
+        std::vector res(begin, end);
+        return bind::toNumpy(res);
+      }, "Array of node ids")
       .def("edges", [](Hypergraph &h) {
-          return py::make_iterator(h.edges().first,h.edges().second);}, py::keep_alive<0, 1>(),
-        "Iterate over all hyperedges")
+        auto [begin, end] = h.edges();
+        std::vector res(begin, end);
+        return bind::toNumpy(res);
+      }, "Array of edge ids")
+      .def("partIds", [](Hypergraph & h) {
+        auto [begin, end] = h.nodes();
+        std::vector<HypernodeID> res;
+        for(auto i = begin; i != end; i++) {
+          res.push_back(h.partID(*i));
+        }
+        return bind::toNumpy(res);
+      }, "Array of part ids")
       .def("pins", [](Hypergraph &h, HyperedgeID he) {
           return py::make_iterator(h.pins(he).first,h.pins(he).second);}, py::keep_alive<0, 1>(),
         "Iterate over all pins of the hyperedge",
@@ -203,7 +332,17 @@ If only one type of weights is required, the other argument has to be an empty l
       .def("incidentEdges", [](Hypergraph &h, HypernodeID hn) {
           return py::make_iterator(h.incidentEdges(hn).first,h.incidentEdges(hn).second);}, py::keep_alive<0, 1>(),
         "Iterate over all incident hyperedges of the node",
-        py::arg("node"));
+        py::arg("node"))
+      .def("__repr__", [](Hypergraph &c){
+        std::stringstream ss;
+        ss << "Hypergraph(n_nodes=" << c.initialNumNodes() << ", n_edges=" << c.initialNumEdges() << ", n_fixed=" << c.numFixedVertices() << ", k=" << c.k() <<")";
+        return ss.str();
+      })
+      .def("__str__", [](Hypergraph &c){
+        std::stringstream ss;
+        ss << "Hypergraph(n_nodes=" << c.initialNumNodes() << ", n_edges=" << c.initialNumEdges() << ", n_fixed=" << c.numFixedVertices() << ", k=" << c.k() <<")";
+        return ss.str();
+      });
 
 
   py::class_<ConnectivitySet>(m,
@@ -243,64 +382,109 @@ If only one type of weights is required, the other argument has to be an empty l
       "Compute the connecivity metric for the partitioned hypergraph",
       py::arg("hypergraph"));
 
-    m.def(
-        "imbalance", &kahypar::metrics::imbalance,
-        "Compute the imbalance of the hypergraph partition",
-      py::arg("hypergraph"),py::arg("context"));
+  m.def(
+      "imbalance", &kahypar::metrics::imbalance,
+      "Compute the imbalance of the hypergraph partition",
+    py::arg("hypergraph"),py::arg("context"));
 
 
-  using kahypar::Context;
-  py::class_<Context>(
-      m, "Context")
-      .def(py::init<>())
-      .def("setK",[](Context& c, const PartitionID k) {
-          c.partition.k = k;
+  py::class_<ContextWrapper>(m, "Context")
+      .def(py::init(&bind::createContext), R"pbdoc(
+Construct a KaHyPar Context.
+
+:param str | None preset: KaHyPar presets
+:param str | None ini_file: ini file to load
+:param str | None ini_content: ini content to load
+
+          )pbdoc",
+        py::arg("k"),
+        py::arg("epsilon"),
+        py::arg("preset")=std::nullopt,
+        py::arg("ini_file")=std::nullopt,
+        py::arg("ini_content")=std::nullopt,
+        py::arg("verbose")=false
+      )
+      .def_property("k",
+        [](ContextWrapper &c) {return c.ctx->partition.k;},
+        [](ContextWrapper &c, PartitionID k) {c.ctx->partition.k = k;}
+      )
+      .def_property("epsilon",
+        [](ContextWrapper &c) {return c.ctx->partition.epsilon;},
+        [](ContextWrapper &c, double epsilon) {c.ctx->partition.epsilon = epsilon;}
+      )
+      .def_property("verbose",
+        [](ContextWrapper &c) {return !c.ctx->partition.quiet_mode;},
+        [](ContextWrapper &c, bool verbose) {c.ctx->partition.quiet_mode = !verbose;}
+      )
+      .def("__del__", [](ContextWrapper &c) {
+        delete c.ctx;
+      })
+      .def("__repr__", [](ContextWrapper &c){
+        std::stringstream ss;
+        ss << *c.ctx;
+        return ss.str();
+      })
+      .def("__str__", [](ContextWrapper &c){
+        std::stringstream ss;
+        ss << *c.ctx;
+        return ss.str();
+      })
+      // .def("debug", [](Context & c) {
+      //   std::cout << "debug _parent=" << c.stats._parent << std::endl;
+      // })
+      .def("setK",[](ContextWrapper &c, const PartitionID k) {
+          c.ctx->partition.k = k;
         },
         "Number of blocks the hypergraph should be partitioned into",
         py::arg("k"))
-      .def("setEpsilon",[](Context& c, const double eps) {
-          c.partition.epsilon = eps;
+      .def("setEpsilon",[](ContextWrapper &c, const double eps) {
+          c.ctx->partition.epsilon = eps;
         },
         "Allowed imbalance epsilon",
         py::arg("imbalance parameter epsilon"))
       .def("setCustomTargetBlockWeights",
-        [](Context& c, const std::vector<kahypar::HypernodeWeight>& custom_target_weights) {
-          c.partition.use_individual_part_weights = true;
-          c.partition.max_part_weights.clear();
+        [](ContextWrapper c, const std::vector<kahypar::HypernodeWeight>& custom_target_weights) {
+          c.ctx->partition.use_individual_part_weights = true;
+          c.ctx->partition.max_part_weights.clear();
           for ( size_t block = 0; block < custom_target_weights.size(); ++block ) {
-            c.partition.max_part_weights.push_back(custom_target_weights[block]);
+            c.ctx->partition.max_part_weights.push_back(custom_target_weights[block]);
           }
         },
         "Assigns each block of the partition an individual maximum allowed block weight",
         py::arg("custom target block weights"))
-      .def("setSeed",[](Context& c, const int seed) {
-          c.partition.seed = seed;
+      .def("setSeed",[](ContextWrapper &c, const int seed) {
+          c.ctx->partition.seed = seed;
         },
         "Seed for the random number generator",
         py::arg("seed"))
-       .def("writePartitionFile",[](Context& c, const bool decision) {
-          c.partition.write_partition_file = decision;
+       .def("writePartitionFile",[](ContextWrapper &c, const bool decision) {
+          c.ctx->partition.write_partition_file = decision;
         },
         "Write the computed partition to the file specified with setPartitionFileName",
         py::arg("bool"))
-      .def("setPartitionFileName",[](Context& c, const std::string& file_name) {
-          c.partition.graph_partition_filename = file_name;
+      .def("setPartitionFileName",[](ContextWrapper &c, const std::string& file_name) {
+          c.ctx->partition.graph_partition_filename = file_name;
         },
         "Set the filename of the computed partition",
         py::arg("file_name"))
-      .def("suppressOutput",[](Context& c, const bool decision) {
-          c.partition.quiet_mode = decision;
+      .def("suppressOutput",[](ContextWrapper &c, const bool decision) {
+          c.ctx->partition.quiet_mode = decision;
         },
         "Suppress partitioning output",
         py::arg("bool"))
+      .def("loadPreset", &bind::loadContextPreset, "Read KaHyPar configuration from preset", py::arg("preset"))
+      .def("loadINTContent", [](ContextWrapper &c, const std::string& content) {
+        std::stringstream ss;
+        ss << content;
+        kahypar::parseIniContent(*c.ctx, ss);
+      }, "Read KaHyPar configuration from ini string", py::arg("ini-content"))
       .def("loadINIconfiguration",
-           [](Context& c, const std::string& path) {
-             parseIniToContext(c, path);
+           [](ContextWrapper c, const std::string& path) {
+             parseIniToContext(*c.ctx, path);
            },
            "Read KaHyPar configuration from file",
            py::arg("path-to-file")
-           );
-
+      );
 
 #ifdef VERSION_INFO
     m.attr("__version__") = VERSION_INFO;

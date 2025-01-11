@@ -32,7 +32,16 @@ repl = '''\
 '''
 tgt = '''\
 #define ALWAYS_ASSERT_2(cond, msg)            \\
-    do { throw std::runtime_error(({std::stringstream ss; ss << "Assertion `" #cond "` failed:" << msg; ss.str();})); } while(0)
+  do {                                        \\
+    if (!(cond)) {                            \\
+      throw std::runtime_error(({             \\
+        std::stringstream ss;                 \\
+        ss << "Assertion `" #cond "` failed:" \\
+           << msg;                            \\
+        ss.str();                             \\
+      }));                                    \\
+    }                                         \\
+  } while (0)
 '''
 text = text.replace(repl, tgt)
 text = text.replace('#pragma once', '#pragma once\n#include<sstream>')

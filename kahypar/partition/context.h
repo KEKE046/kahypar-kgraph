@@ -370,7 +370,7 @@ inline std::ostream& operator<< (std::ostream& str, const PartitioningParameters
       str << "  L_opt" << i << ":                             " << params.perfect_balance_part_weights[i]
           << std::endl;
     }
-  } else {
+  } else if(!params.perfect_balance_part_weights.empty()) {
     str << "  L_opt" << ":                              " << params.perfect_balance_part_weights[0]
         << std::endl;
   }
@@ -379,7 +379,7 @@ inline std::ostream& operator<< (std::ostream& str, const PartitioningParameters
       str << "  L_max" << i << ":                             " << params.max_part_weights[i]
           << std::endl;
     }
-  } else {
+  } else if(!params.max_part_weights.empty()) {
     str << "  L_max" << ":                              " << params.max_part_weights[0]
         << std::endl;
   }

@@ -1,19 +1,19 @@
-from typing import List, Iterator, Any, Union
+from typing import List, Iterator, Any, Literal, overload
+import numpy as np
+from numpy.typing import NDArray
+
+ConfigPreset = Literal[
+    'cut_kKaHyPar-E_sea20',
+    'cut_kKaHyPar_sea20',
+    'cut_rKaHyPar_sea20',
+    'km1_kKaHyPar_eco_sea20',
+    'km1_kKaHyPar-E_sea20',
+    'km1_kKaHyPar_sea20',
+    'km1_rKaHyPar_sea20',
+]
 
 class Hypergraph:
-    def __init__(self, num_nodes: int, num_edges: int, index_vector: List[int], edge_vector: List[int], k: int) -> None:
-        """
-        Construct an unweighted hypergraph.
-
-        :param num_nodes: Number of nodes
-        :param num_edges: Number of hyperedges
-        :param index_vector: Starting indices for each hyperedge
-        :param edge_vector: Vector containing all hyperedges
-        :param k: Number of blocks in which the hypergraph should be partitioned
-        """
-        ...
-
-    def __init__(self, num_nodes: int, num_edges: int, index_vector: List[int], edge_vector: List[int], k: int, edge_weights: List[float], node_weights: List[float]) -> None:
+    def __init__(self, num_nodes: int, num_edges: int, index_vector: NDArray[np.ulonglong], edge_vector: NDArray[np.uintc], k: int, edge_weights: NDArray[np.intc] = None, node_weights: NDArray[np.intc] = None) -> None:
         """
         Construct a hypergraph with node and edge weights.
 
@@ -206,7 +206,7 @@ class Hypergraph:
         """
         ...
 
-    def nodes(self) -> Iterator[int]:
+    def nodes(self) -> NDArray[np.uintc]:
         """
         Iterate over all nodes.
 
@@ -214,11 +214,18 @@ class Hypergraph:
         """
         ...
 
-    def edges(self) -> Iterator[int]:
+    def edges(self) -> NDArray[np.uintc]:
         """
         Iterate over all hyperedges.
 
         :return: An iterator over all hyperedges.
+        """
+        ...
+
+    def partIds(self) -> NDArray[np.uintc]:
+        """
+        Array of part ids
+        :return: An iterator over all part id of nodes
         """
         ...
 
@@ -315,11 +322,24 @@ def imbalance(hypergraph: Hypergraph, context: 'Context') -> float:
     ...
 
 class Context:
-    def __init__(self) -> None:
+    def __init__(self, k: int, epsilon: float, preset: str=None, ini_file:str = None, ini_content:str = None, verbose: bool = False):
         """
-        Initialize a new Context object.
+        Initialize an empty KaHyPar context
         """
         ...
+
+    @property
+    def k(self) -> int: ...
+    @k.setter
+    def k(self, k: int) -> None: ...
+    @property
+    def epsilon(self) -> float: ...
+    @epsilon.setter
+    def epsilon(self, epsilon: float) -> None: ...
+    @property
+    def verbose(self) -> bool: ...
+    @verbose.setter
+    def verbose(self, verbose: bool) -> None: ...
 
     def setK(self, k: int) -> None:
         """
@@ -374,6 +394,22 @@ class Context:
         Suppress partitioning output.
 
         :param decision: Whether to suppress output.
+        """
+        ...
+
+    def loadPreset(self, preset: ConfigPreset) -> None:
+        """
+        Read KaHyPar configuration from preset.
+
+        :param content: The name of the configuration
+        """
+        ...
+
+    def loadINIContent(self, content: str) -> None:
+        """
+        Read KaHyPar configuration from ini string.
+
+        :param content: The content of the configuration
         """
         ...
 

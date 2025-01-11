@@ -22,6 +22,7 @@
 
 #include <algorithm>
 #include <limits>
+#include <stdexcept>
 #include <utility>
 #include <vector>
 
@@ -99,8 +100,7 @@ class Population {
     partitioner.partition(hg, context);
     _individuals.emplace_back(Individual(hg, context));
     if (_individuals.size() > context.evolutionary.population_size) {
-      std::cout << "Error, tried to fill Population above limit" << std::endl;
-      std::exit(1);
+      throw std::runtime_error("Error, tried to fill Population above limit");
     }
     DBG << "Individual" << _individuals.size() - 1
         << V(_individuals.back().fitness())

@@ -19,8 +19,11 @@
  ******************************************************************************/
 
 #pragma once
+#include<sstream>
 
 #include <boost/program_options.hpp>
+#include <istream>
+#include <stdexcept>
 
 #if defined(_WIN32)
 #include <windows.h>
@@ -694,8 +697,7 @@ void processCommandLineInput(Context& context, int argc, char* argv[]) {
 
   std::ifstream file(context_path.c_str());
   if (!file) {
-    std::cerr << "Could not load context file at: " << context_path << std::endl;
-    std::exit(-1);
+    throw std::runtime_error("Could not load context file at: " + context_path);
   }
 
   po::options_description ini_line_options;
@@ -729,13 +731,7 @@ void processCommandLineInput(Context& context, int argc, char* argv[]) {
   }
 }
 
-
-void parseIniToContext(Context& context, const std::string& ini_filename) {
-  std::ifstream file(ini_filename.c_str());
-  if (!file) {
-    std::cerr << "Could not load context file at: " << ini_filename << std::endl;
-    std::exit(-1);
-  }
+void parseIniContent(Context & context, std::istream &in) {
   const int num_columns = 80;
 
   po::variables_map cmd_vm;
@@ -748,11 +744,19 @@ void parseIniToContext(Context& context, const std::string& ini_filename) {
   .add(createRefinementOptionsDescription(context, num_columns, false))
   .add(createEvolutionaryOptionsDescription(context, num_columns));
 
-  po::store(po::parse_config_file(file, ini_line_options, true), cmd_vm);
+  po::store(po::parse_config_file(in, ini_line_options, true), cmd_vm);
   po::notify(cmd_vm);
 
   if (context.partition.use_individual_part_weights) {  // Note(Lars): This affects flow network sizes!
     context.partition.epsilon = 0;
   }
+}
+
+void parseIniToContext(Context& context, const std::string& ini_filename) {
+  std::ifstream file(ini_filename.c_str());
+  if (!file) {
+    throw std::runtime_error("Could not load context file at: " + ini_filename);
+  }
+  parseIniContent(context, file);
 }
 }  // namespace kahypar

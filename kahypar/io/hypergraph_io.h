@@ -26,6 +26,7 @@
 #include <memory>
 #include <limits>
 #include <sstream>
+#include <stdexcept>
 #include <string>
 #include <unordered_map>
 #include <unordered_set>
@@ -219,9 +220,10 @@ static inline void validateAndPrintErrors(const HypernodeID num_hypernodes, cons
     HighResClockTimepoint start = std::chrono::high_resolution_clock::now();
     validate::validateInput(num_hypernodes, num_hyperedges, hyperedge_indices, hyperedges,
                             hyperedge_weights, vertex_weights, &errors, &ignored_hes, &ignored_pins);
-    validate::printErrors(num_hyperedges, errors, line_numbers, promote_warnings_to_errors);
+    std::stringstream ss;
+    validate::printErrors(num_hyperedges, errors, line_numbers, promote_warnings_to_errors, ss);
     if (validate::containsFatalError(errors, promote_warnings_to_errors)) {
-      exit(1);
+      throw std::runtime_error(ss.str());
     }
     HighResClockTimepoint end = std::chrono::high_resolution_clock::now();
     Timer::instance().add(Timepoint::input_validation,

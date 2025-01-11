@@ -77,6 +77,8 @@ def test_suite():
 with codecs.open('README.md', "r", encoding='utf-8') as fh:
     long_description = fh.read()
 
+from pathlib import Path
+
 if __name__ == '__main__':
     setup(
         name='kahypar-kgraph',
@@ -88,7 +90,10 @@ if __name__ == '__main__':
         author='Sebastian Schlag',
         author_email='kahypar@sebastianschlag.de',
         ext_modules=[CMakeExtension('kahypar-kgraph')],
-        data_files=[('.', ['kahypar_kgraph.pyi'])],
+        data_files=[
+            ('.', ['kahypar_kgraph.pyi']),
+            ('./config/', list(Path('config').glob('*.ini')))
+        ],
         cmdclass=dict(build_ext=CMakeBuild),
         zip_safe=False,
         # use MANIFEST.in for extra source files
