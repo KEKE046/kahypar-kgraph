@@ -18,6 +18,7 @@
  *
  ******************************************************************************/
 
+#include <gtest/gtest.h>
 #include <memory>
 
 #include "gmock/gmock.h"
@@ -376,9 +377,8 @@ TEST(KaHyPar, RejectsInvalidHypergraphViaInterface) {
     size_t hyperedge_indices[3] = {0, 2, 1}; // invalid index array
     kahypar_hyperedge_id_t hyperedges[2] = {0, 1};
 
-    EXPECT_EXIT(kahypar_create_hypergraph(num_blocks, num_vertices, num_hyperedges,
-                                          hyperedge_indices, hyperedges, nullptr, nullptr),
-                ::testing::ExitedWithCode(1), "");
+    EXPECT_ANY_THROW(kahypar_create_hypergraph(num_blocks, num_vertices, num_hyperedges,
+                                          hyperedge_indices, hyperedges, nullptr, nullptr));
   }
 }
 
@@ -662,8 +662,7 @@ TEST(CorruptedHypergraphFile, IsRejectedByInputValidation) {
     kahypar_partition_id_t num_blocks = 2;
     std::string filename("test_instances/corrupted_hypergraph_with_invalid_pin.hgr");
 
-    EXPECT_EXIT(kahypar_create_hypergraph_from_file(filename.c_str(), num_blocks),
-                ::testing::ExitedWithCode(1), "");
+    EXPECT_ANY_THROW(kahypar_create_hypergraph_from_file(filename.c_str(), num_blocks));
   }
 }
 
