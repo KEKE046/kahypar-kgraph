@@ -35,6 +35,7 @@ class CMakeBuild(build_ext):
         extdir = os.path.abspath(os.path.dirname(self.get_ext_fullpath(ext.name)))
         cmake_args = ['-DCMAKE_RUNTIME_OUTPUT_DIRECTORY=' + extdir,
                       '-DCMAKE_LIBRARY_OUTPUT_DIRECTORY=' + extdir,
+                      '-DKAHYPAR_USE_MINIMAL_BOOST=ON',
                       '-DPYTHON_EXECUTABLE=' + sys.executable,
                       '-DKAHYPAR_PYTHON_INTERFACE=ON']
 
@@ -78,15 +79,16 @@ with codecs.open('README.md', "r", encoding='utf-8') as fh:
 
 if __name__ == '__main__':
     setup(
-        name='kahypar',
+        name='kahypar-kgraph',
         version='1.3.5',
-        description='Python Inferface for the Karlsruhe Hypergraph Partitioning Framework (KaHyPar)',
+        description='Python Inferface for the Karlsruhe Hypergraph Partitioning Framework (KaHyPar), Updated for better use experience',
         long_description=long_description,
         long_description_content_type="text/markdown",
         url="https://www.kahypar.org",
         author='Sebastian Schlag',
         author_email='kahypar@sebastianschlag.de',
-        ext_modules=[CMakeExtension('kahypar')],
+        ext_modules=[CMakeExtension('kahypar-kgraph')],
+        data_files=[('.', ['kahypar_kgraph.pyi'])],
         cmdclass=dict(build_ext=CMakeBuild),
         zip_safe=False,
         # use MANIFEST.in for extra source files

@@ -16,6 +16,6 @@ pybind11_add_module(kahypar_python module.cpp)
 target_link_libraries(kahypar_python PRIVATE ${Boost_LIBRARIES})
 
 # rename kahypar_python target output to kahypar
-set_target_properties(kahypar_python PROPERTIES OUTPUT_NAME kahypar)
+set_target_properties(kahypar_python PROPERTIES OUTPUT_NAME kahypar_kgraph)
 
 ################################################################################

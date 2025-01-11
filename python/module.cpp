@@ -86,7 +86,7 @@ Hypergraph createUnweightedHypergraph(const HypernodeID num_nodes, const Hypered
 
 namespace py = pybind11;
 
-PYBIND11_MODULE(kahypar, m) {
+PYBIND11_MODULE(kahypar_kgraph, m) {
   using kahypar::Hypergraph;
   using kahypar::HypernodeID;
   using kahypar::HyperedgeID;
