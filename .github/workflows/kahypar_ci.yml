@@ -3,46 +3,46 @@ name: KaHyPar CI
 on: [ push, pull_request ]
 
 jobs:
-  kahypar_debug_tests:
-    runs-on: ubuntu-latest
-    env:
-      BOOST_ROOT : "/usr/local/share/boost/1.72.0"
-      CI_ACTIVE : 1
-      BUILD_TYPE : "Debug"
-      COV : "ON"
+  # kahypar_debug_tests:
+  #   runs-on: ubuntu-latest
+  #   env:
+  #     BOOST_ROOT : "/usr/local/share/boost/1.72.0"
+  #     CI_ACTIVE : 1
+  #     BUILD_TYPE : "Debug"
+  #     COV : "ON"
 
-    steps:
-      - name: Checkout HEAD
-        uses: actions/checkout@v2
-        with:
-         fetch-depth: 1
+  #   steps:
+  #     - name: Checkout HEAD
+  #       uses: actions/checkout@v2
+  #       with:
+  #        fetch-depth: 1
 
-      - name: Install Dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install libboost-program-options-dev lcov gcovr libpython3-all-dev cppcheck
+  #     - name: Install Dependencies
+  #       run: |
+  #         sudo apt-get update
+  #         sudo apt-get install libboost-program-options-dev lcov gcovr libpython3-all-dev cppcheck
 
-      - name: Setup KaHyPar
-        run: |
-          git submodule init
-          git submodule update
-          rm -rf debug && mkdir debug && cd debug
-          cmake .. -DCMAKE_BUILD_TYPE="$BUILD_TYPE" -DKAHYPAR_USE_GCOV="$COV" -DKAHYPAR_ENABLE_HEAVY_PREPROCESSING_ASSERTIONS=OFF
+  #     - name: Setup KaHyPar
+  #       run: |
+  #         git submodule init
+  #         git submodule update
+  #         rm -rf debug && mkdir debug && cd debug
+  #         cmake .. -DCMAKE_BUILD_TYPE="$BUILD_TYPE" -DKAHYPAR_USE_GCOV="$COV" -DKAHYPAR_ENABLE_HEAVY_PREPROCESSING_ASSERTIONS=OFF
 
-      - name: Install KaHyPar & Run Tests
-        run: |
-          cd debug
-          make clean all
+  #     - name: Install KaHyPar & Run Tests
+  #       run: |
+  #         cd debug
+  #         make clean all
 
-      - name: Report Code Coverage
-        run: |
-          cd debug
-          lcov --directory . --capture --output-file coverage.info;
-          lcov --remove coverage.info '/usr/*' --output-file coverage.info;
-          lcov --list coverage.info;
-          gcovr -r ../ -x > report.xml;
-          cd ..
-          bash <(curl -s https://codecov.io/bash) || echo "Codecov did not collect coverage reports"
+  #     - name: Report Code Coverage
+  #       run: |
+  #         cd debug
+  #         lcov --directory . --capture --output-file coverage.info;
+  #         lcov --remove coverage.info '/usr/*' --output-file coverage.info;
+  #         lcov --list coverage.info;
+  #         gcovr -r ../ -x > report.xml;
+  #         cd ..
+  #         bash <(curl -s https://codecov.io/bash) || echo "Codecov did not collect coverage reports"
 
   kahypar_regression_tests:
     runs-on: ubuntu-latest
@@ -79,3 +79,69 @@ jobs:
         run: |
           cd build
           ../scripts/run_regression_tests.sh
+
+  build_wheels:
+    name: Build wheels on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    env:
+      KAHYPAR_USE_MINIMAL_BOOST: ON
+
+    strategy:
+      matrix:
+        # macos-13 is an intel runner, macos-14 is apple silicon
+        os: [ubuntu-latest]
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true  # Optional, use if you have submodules
+
+      - name: Patch kahypar
+        run: python3 patch-kahypar.py
+
+      - name: Build wheels
+        uses: pypa/cibuildwheel@v2.22.0
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: cibw-wheels-${{ matrix.os }}-${{ strategy.job-index }}
+          path: ./wheelhouse/*.whl
+
+  build_sdist:
+    name: Build source distribution
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true  # Optional, use if you have submodules
+
+      - name: Patch kahypar
+        run: python3 patch-kahypar.py
+
+      - name: Build sdist
+        run: pipx run build --sdist
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: cibw-sdist
+          path: dist/*.tar.gz
+
+  upload_pypi:
+    needs: [build_wheels, build_sdist, kahypar_regression_tests]
+    runs-on: ubuntu-latest
+    environment: pypi
+    permissions:
+      id-token: write
+    # if: github.event_name == 'release' && github.event.action == 'published'
+    # or, alternatively, upload to PyPI on every tag starting with 'v' (remove on: release above to use this)
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          # unpacks all CIBW artifacts into dist/
+          pattern: cibw-*
+          path: dist
+          merge-multiple: true
+
+      - uses: pypa/gh-action-pypi-publish@release/v1
+        # To test: repository-url: https://test.pypi.org/legacy/

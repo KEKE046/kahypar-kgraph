@@ -19,6 +19,7 @@
  *
  ******************************************************************************/
 
+#include <optional>
 #include <pybind11/pybind11.h>
 
 #include <pybind11/stl.h>
@@ -109,36 +110,36 @@ py::array_t<T> toNumpy(const std::vector<T> & vec) {
   return res;
 }
 
-Hypergraph createUnweightedHypergraphFromNumpy(
-  const HypernodeID num_nodes, const HyperedgeID num_edges,
-  const py::array_t<size_t, py::array::c_style | py::array::forcecast>& index_vector,
-  const py::array_t<kahypar::HypernodeID, py::array::c_style | py::array::forcecast>& edge_vector,
-  const PartitionID k
-) {
-  return createUnweightedHypergraph(
-    num_nodes, num_edges,
-    toVector(index_vector),
-    toVector(edge_vector),
-    k
-  );
-}
-
-Hypergraph createWeightedHypergraphFromNumpy(
+Hypergraph createHypergraph(
   const HypernodeID num_nodes, const HyperedgeID num_edges,
   const py::array_t<size_t, py::array::c_style | py::array::forcecast>& index_vector,
   const py::array_t<kahypar::HypernodeID, py::array::c_style | py::array::forcecast>& edge_vector,
   const PartitionID k,
-  const py::array_t<kahypar::HyperedgeWeight, py::array::c_style | py::array::forcecast>& edge_weights,
-  const py::array_t<kahypar::HypernodeWeight, py::array::c_style | py::array::forcecast>& node_weights
+  const std::optional<py::array_t<kahypar::HyperedgeWeight, py::array::c_style | py::array::forcecast>>& edge_weights,
+  const std::optional<py::array_t<kahypar::HypernodeWeight, py::array::c_style | py::array::forcecast>>& node_weights
 ) {
-  return createWeightedHypergraph(
-    num_nodes, num_edges,
-    toVector(index_vector),
-    toVector(edge_vector),
-    k,
-    toVector(edge_weights),
-    toVector(node_weights)
-  );
+  if(edge_weights && node_weights) {
+    return createWeightedHypergraph(
+      num_nodes, num_edges,
+      toVector(index_vector),
+      toVector(edge_vector),
+      k,
+      toVector(*edge_weights),
+      toVector(*node_weights)
+    );
+  } else {
+    if(edge_weights || node_weights) {
+      throw std::runtime_error("Both edge weight and node weight is needed when building weighted hypergraph");
+    }
+    return createWeightedHypergraph(
+      num_nodes, num_edges,
+      toVector(index_vector),
+      toVector(edge_vector),
+      k,
+      {},
+      {}
+    );
+  }
 }
 
 std::string loadConfigFile(std::string name) {
@@ -204,22 +205,7 @@ PYBIND11_MODULE(kahypar_kgraph, m) {
 
   py::class_<Hypergraph>(
       m, "Hypergraph")
-      .def(py::init(&bind::createUnweightedHypergraphFromNumpy),R"pbdoc(
-Construct an unweighted hypergraph.
-
-:param HypernodeID num_nodes: Number of nodes
-:param HyperedgeID num_edges: Number of hyperedges
-:param HyperedgeIndexVector index_vector: Starting indices for each hyperedge
-:param HyperedgeVector edge_vector: Vector containing all hyperedges
-:param PartitionID k: Number of blocks in which the hypergraph should be partitioned
-
-          )pbdoc",
-           py::arg("num_nodes"),
-           py::arg("num_edges"),
-           py::arg("index_vector"),
-           py::arg("edge_vector"),
-           py::arg("k"))
-      .def(py::init(&bind::createWeightedHypergraphFromNumpy),R"pbdoc(
+      .def(py::init(&bind::createHypergraph),R"pbdoc(
 Construct a hypergraph with node and edge weights.
 
 If only one type of weights is required, the other argument has to be an empty list.
@@ -238,8 +224,8 @@ If only one type of weights is required, the other argument has to be an empty l
            py::arg("index_vector"),
            py::arg("edge_vector"),
            py::arg("k"),
-           py::arg("edge_weights"),
-           py::arg("node_weights"))
+           py::arg("edge_weights") = std::nullopt,
+           py::arg("node_weights") = std::nullopt)
       .def("printGraphState", &Hypergraph::printGraphState,
            "Print the hypergraph state (for debugging purposes)")
       .def("nodeDegree", &Hypergraph::nodeDegree,
