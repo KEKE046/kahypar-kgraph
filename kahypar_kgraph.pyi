@@ -323,7 +323,7 @@ def imbalance(hypergraph: Hypergraph, context: 'Context') -> float:
     ...
 
 class Context:
-    def __init__(self, k: int, epsilon: float, preset: str=None, ini_file:str = None, ini_content:str = None, verbose: bool = False):
+    def __init__(self, k: int, epsilon: float, preset: ConfigPreset=None, ini_file:str = None, ini_content:str = None, verbose: bool = False):
         """
         Initialize an empty KaHyPar context
         """
