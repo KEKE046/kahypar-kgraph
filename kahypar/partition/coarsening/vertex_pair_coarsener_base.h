@@ -19,6 +19,7 @@
 ******************************************************************************/
 
 #pragma once
+#include<sstream>
 
 #include <algorithm>
 #include <limits>
@@ -76,8 +77,7 @@ class VertexPairCoarsenerBase : public CoarsenerBase {
         initial_objective = current_metrics.km1;
         break;
       default:
-        LOG << "Unknown Objective";
-        exit(-1);
+                throw std::runtime_error(({std::stringstream ss; ss << "Unknown Objective"; ss.str();}));
     }
 
     if (_context.type == ContextType::main) {
@@ -161,8 +161,7 @@ class VertexPairCoarsenerBase : public CoarsenerBase {
         improvement_found = current_metrics.km1 < initial_objective;
         break;
       default:
-        LOG << "Unknown Objective";
-        exit(-1);
+                throw std::runtime_error(({std::stringstream ss; ss << "Unknown Objective"; ss.str();}));
     }
 
     return improvement_found;

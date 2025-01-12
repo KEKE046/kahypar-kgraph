@@ -18,6 +18,7 @@
  *
 ******************************************************************************/
 #pragma once
+#include<sstream>
 
 #include <math.h>
 
@@ -76,8 +77,7 @@ class EvoPartitioner {
           DBG << _population;
           break;
         default:
-          LOG << "Error in evo_partitioner.h: Non-covered case in decision making";
-          std::exit(EXIT_FAILURE);
+                    throw std::runtime_error(({std::stringstream ss; ss << "Error in evo_partitioner.h: Non-covered case in decision making"; ss.str();}));
       }
     }
     hg.reset();
@@ -153,8 +153,7 @@ class EvoPartitioner {
           break;
         }
       case EvoCombineStrategy::UNDEFINED:
-        LOG << "Partitioner called without combine strategy";
-        std::exit(-1);
+                throw std::runtime_error(({std::stringstream ss; ss << "Partitioner called without combine strategy"; ss.str();}));
         // omit default case to trigger compiler warning for missing cases
     }
     context.evolutionary.combine_strategy = original_strategy;
@@ -184,8 +183,7 @@ class EvoPartitioner {
         verbose(context, mutation_position);
         break;
       case EvoMutateStrategy::UNDEFINED:
-        LOG << "Partitioner called without mutation strategy";
-        std::exit(-1);
+                throw std::runtime_error(({std::stringstream ss; ss << "Partitioner called without mutation strategy"; ss.str();}));
         // omit default case to trigger compiler warning for missing cases
     }
     context.evolutionary.mutate_strategy = original_strategy;

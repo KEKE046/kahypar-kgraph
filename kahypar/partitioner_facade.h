@@ -18,6 +18,7 @@
  *
  ******************************************************************************/
 #pragma once
+#include<sstream>
 
 #include <chrono>
 #include <iostream>
@@ -100,16 +101,14 @@ class PartitionerFacade {
 
     // Preconditions for direct k-way V-cycle refinement:
     if (context.partition.mode != kahypar::Mode::direct_kway) {
-      LOG << "V-cycle refinement of input partitions is only possible in direct k-way mode";
-      std::exit(0);
+            throw std::runtime_error(({std::stringstream ss; ss << "V-cycle refinement of input partitions is only possible in direct k-way mode"; ss.str();}));
     }
     if (context.preprocessing.enable_min_hash_sparsifier == true) {
       LOG << "Disabling sparsifier for refinement of input partitions.";
       context.preprocessing.enable_min_hash_sparsifier = false;
     }
     if (context.partition.global_search_iterations == 0) {
-      LOG << "V-cycle refinement of input partitions needs parameter --vcycles to be >= 1";
-      std::exit(0);
+            throw std::runtime_error(({std::stringstream ss; ss << "V-cycle refinement of input partitions needs parameter --vcycles to be >= 1"; ss.str();}));
     }
     context.setupPartWeights(hypergraph.totalWeight());
     io::printQualityOfInitialSolution(hypergraph, context);
@@ -117,8 +116,7 @@ class PartitionerFacade {
 
   size_t performTimeLimitedRepeatedPartitioning(Hypergraph& hypergraph, Context& context) {
     if (context.partition.time_limit <= 0) {
-      LOG << "Time Limited Repeated Partitioning with a time limit <= 0 is not possible";
-      std::exit(0);
+            throw std::runtime_error(({std::stringstream ss; ss << "Time Limited Repeated Partitioning with a time limit <= 0 is not possible"; ss.str();}));
     }
 
     size_t iteration = 0;

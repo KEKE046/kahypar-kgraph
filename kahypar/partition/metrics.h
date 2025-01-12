@@ -19,6 +19,7 @@
 ******************************************************************************/
 
 #pragma once
+#include<sstream>
 
 #include <cmath>
 
@@ -44,8 +45,7 @@ struct Metrics {
           km1 = value;
           break;
         default:
-          LOG << "Unknown Objective";
-          exit(-1);
+                    throw std::runtime_error(({std::stringstream ss; ss << "Unknown Objective"; ss.str();}));
       }
     } else if (mode == Mode::recursive_bisection) {
       // in recursive bisection, km1 is also optimized via the cut net metric
@@ -59,8 +59,7 @@ struct Metrics {
         case Objective::cut: return cut;
         case Objective::km1: return km1;
         default:
-          LOG << "Unknown Objective";
-          exit(-1);
+                    throw std::runtime_error(({std::stringstream ss; ss << "Unknown Objective"; ss.str();}));
       }
     }
     ASSERT(mode == Mode::recursive_bisection);
@@ -120,8 +119,7 @@ static inline HyperedgeWeight objective(const Hypergraph& hg, const Objective& o
     case Objective::cut: return hyperedgeCut(hg);
     case Objective::km1: return km1(hg);
     default:
-      LOG << "Unknown Objective";
-      exit(-1);
+            throw std::runtime_error(({std::stringstream ss; ss << "Unknown Objective"; ss.str();}));
   }
 }
 
@@ -250,8 +248,7 @@ static inline HyperedgeWeight correctMetric(const Hypergraph& hypergraph, const 
     case Objective::cut:
       return hyperedgeCut(hypergraph);
     default:
-      LOG << "The specified Objective is not listed in the Metrics";
-      std::exit(0);
+            throw std::runtime_error(({std::stringstream ss; ss << "The specified Objective is not listed in the Metrics"; ss.str();}));
   }
 }
 

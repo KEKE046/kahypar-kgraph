@@ -20,6 +20,7 @@
 
 #pragma once
 #include<sstream>
+#include<sstream>
 
 #include <boost/program_options.hpp>
 #include <istream>
@@ -689,8 +690,7 @@ void processCommandLineInput(Context& context, int argc, char* argv[]) {
   // error if only help was supplied
   if (cmd_vm.count("help") != 0 || argc == 1) {
     kahypar::io::printBanner(context);
-    LOG << cmd_line_options;
-    exit(0);
+        throw std::runtime_error(({std::stringstream ss; ss << cmd_line_options; ss.str();}));
   }
 
   po::notify(cmd_vm);

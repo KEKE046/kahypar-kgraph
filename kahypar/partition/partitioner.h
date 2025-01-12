@@ -19,6 +19,7 @@
  ******************************************************************************/
 
 #pragma once
+#include<sstream>
 
 #include <algorithm>
 #include <string>
@@ -80,8 +81,7 @@ static inline void partition(Hypergraph& hypergraph, const Context& context) {
         direct_kway::partition(hypergraph, context);
         break;
       case Mode::UNDEFINED:
-        LOG << "Partitioning Mode undefined!";
-        std::exit(-1);
+                throw std::runtime_error(({std::stringstream ss; ss << "Partitioning Mode undefined!"; ss.str();}));
     }
   }
 }

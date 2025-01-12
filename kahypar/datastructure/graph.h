@@ -20,6 +20,7 @@
  ******************************************************************************/
 
 #pragma once
+#include<sstream>
 
 #include <algorithm>
 #include <functional>
@@ -182,11 +183,9 @@ class Graph {
             });
           break;
         case LouvainEdgeWeight::hybrid:
-          LOG << "Only uniform/non-uniform/degree edge weight is allowed at graph construction.";
-          std::exit(-1);
+                    throw std::runtime_error(({std::stringstream ss; ss << "Only uniform/non-uniform/degree edge weight is allowed at graph construction."; ss.str();}));
         default:
-          LOG << "Unknown edge weight for bipartite graph.";
-          std::exit(-1);
+                    throw std::runtime_error(({std::stringstream ss; ss << "Unknown edge weight for bipartite graph."; ss.str();}));
       }
     }
   }

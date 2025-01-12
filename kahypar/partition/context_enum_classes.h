@@ -25,6 +25,7 @@
  ******************************************************************************/
 
 #pragma once
+#include<sstream>
 
 #include <iostream>
 #include <string>
@@ -426,8 +427,7 @@ static EvoMutateStrategy mutateStrategyFromString(const std::string& strat) {
   } else if (strat == "vcycle") {
     return EvoMutateStrategy::vcycle;
   }
-  LOG << "No valid mutate strategy. ";
-  exit(0);
+    throw std::runtime_error(({std::stringstream ss; ss << "No valid mutate strategy. "; ss.str();}));
 }
 static EvoCombineStrategy combineStrategyFromString(const std::string& strat) {
   if (strat == "basic") {
@@ -435,8 +435,7 @@ static EvoCombineStrategy combineStrategyFromString(const std::string& strat) {
   } else if (strat == "edge-frequency") {
     return EvoCombineStrategy::edge_frequency;
   }
-  LOG << "No valid combine strategy. ";
-  exit(0);
+    throw std::runtime_error(({std::stringstream ss; ss << "No valid combine strategy. "; ss.str();}));
 }
 static EvoReplaceStrategy replaceStrategyFromString(const std::string& strat) {
   if (strat == "worst") {
@@ -446,8 +445,7 @@ static EvoReplaceStrategy replaceStrategyFromString(const std::string& strat) {
   } else if (strat == "strong-diverse") {
     return EvoReplaceStrategy::strong_diverse;
   }
-  LOG << "No valid replace strategy. ";
-  exit(0);
+    throw std::runtime_error(({std::stringstream ss; ss << "No valid replace strategy. "; ss.str();}));
 }
 
 static AcceptancePolicy acceptanceCriterionFromString(const std::string& crit) {
@@ -456,8 +454,7 @@ static AcceptancePolicy acceptanceCriterionFromString(const std::string& crit) {
   } else if (crit == "best_prefer_unmatched") {
     return AcceptancePolicy::best_prefer_unmatched;
   }
-  LOG << "No valid acceptance criterion for rating.";
-  exit(0);
+    throw std::runtime_error(({std::stringstream ss; ss << "No valid acceptance criterion for rating."; ss.str();}));
 }
 
 static RatingPartitionPolicy ratingPartitionPolicyFromString(const std::string& partition) {
@@ -466,8 +463,7 @@ static RatingPartitionPolicy ratingPartitionPolicyFromString(const std::string& 
   } else if (partition == "evolutionary") {
     return RatingPartitionPolicy::evolutionary;
   }
-  LOG << "No valid partition policy for rating.";
-  exit(0);
+    throw std::runtime_error(({std::stringstream ss; ss << "No valid partition policy for rating."; ss.str();}));
   return RatingPartitionPolicy::normal;
 }
 
@@ -479,8 +475,7 @@ static FixVertexContractionAcceptancePolicy fixedVertexAcceptanceCriterionFromSt
   } else if (crit == "equivalent_vertices") {
     return FixVertexContractionAcceptancePolicy::equivalent_vertices;
   }
-  LOG << "No valid fixed vertex acceptance criterion for rating.";
-  exit(0);
+    throw std::runtime_error(({std::stringstream ss; ss << "No valid fixed vertex acceptance criterion for rating."; ss.str();}));
 }
 
 static HeavyNodePenaltyPolicy heavyNodePenaltyFromString(const std::string& penalty) {
@@ -492,8 +487,7 @@ static HeavyNodePenaltyPolicy heavyNodePenaltyFromString(const std::string& pena
     return HeavyNodePenaltyPolicy::edge_frequency_penalty;
     // omit default case to trigger compiler warning for missing cases
   }
-  LOG << "No valid edge penalty policy for rating.";
-  exit(0);
+    throw std::runtime_error(({std::stringstream ss; ss << "No valid edge penalty policy for rating."; ss.str();}));
   return HeavyNodePenaltyPolicy::multiplicative_penalty;
 }
 
@@ -503,8 +497,7 @@ static RatingFunction ratingFunctionFromString(const std::string& function) {
   } else if (function == "edge_frequency") {
     return RatingFunction::edge_frequency;
   }
-  LOG << "No valid rating function for rating.";
-  exit(0);
+    throw std::runtime_error(({std::stringstream ss; ss << "No valid rating function for rating."; ss.str();}));
   return RatingFunction::heavy_edge;
 }
 
@@ -514,8 +507,7 @@ static RefinementStoppingRule stoppingRuleFromString(const std::string& rule) {
   } else if (rule == "adaptive_opt") {
     return RefinementStoppingRule::adaptive_opt;
   }
-  LOG << "No valid stopping rule for FM.";
-  exit(0);
+    throw std::runtime_error(({std::stringstream ss; ss << "No valid stopping rule for FM."; ss.str();}));
   return RefinementStoppingRule::simple;
 }
 
@@ -529,8 +521,7 @@ static CoarseningAlgorithm coarseningAlgorithmFromString(const std::string& type
   } else if (type == "do_nothing") {
     return CoarseningAlgorithm::do_nothing;
   }
-  LOG << "Illegal option:" << type;
-  exit(0);
+    throw std::runtime_error(({std::stringstream ss; ss << "Illegal option:" << type; ss.str();}));
   return CoarseningAlgorithm::heavy_lazy;
 }
 
@@ -554,8 +545,7 @@ static RefinementAlgorithm refinementAlgorithmFromString(const std::string& type
   } else if (type == "do_nothing") {
     return RefinementAlgorithm::do_nothing;
   }
-  LOG << "Illegal option:" << type;
-  exit(0);
+    throw std::runtime_error(({std::stringstream ss; ss << "Illegal option:" << type; ss.str();}));
   return RefinementAlgorithm::kway_fm;
 }
 
@@ -587,8 +577,7 @@ static InitialPartitionerAlgorithm initialPartitioningAlgorithmFromString(const 
   } else if (mode == "pool") {
     return InitialPartitionerAlgorithm::pool;
   }
-  LOG << "Illegal option:" << mode;
-  exit(0);
+    throw std::runtime_error(({std::stringstream ss; ss << "Illegal option:" << mode; ss.str();}));
   return InitialPartitionerAlgorithm::greedy_global;
 }
 
@@ -598,8 +587,7 @@ static InitialPartitioningTechnique initialPartitioningTechniqueFromString(const
   } else if (technique == "multi") {
     return InitialPartitioningTechnique::multilevel;
   }
-  LOG << "Illegal option:" << technique;
-  exit(0);
+    throw std::runtime_error(({std::stringstream ss; ss << "Illegal option:" << technique; ss.str();}));
   return InitialPartitioningTechnique::multilevel;
 }
 
@@ -613,8 +601,7 @@ static LouvainEdgeWeight edgeWeightFromString(const std::string& type) {
   } else if (type == "degree") {
     return LouvainEdgeWeight::degree;
   }
-  LOG << "Illegal option:" << type;
-  exit(0);
+    throw std::runtime_error(({std::stringstream ss; ss << "Illegal option:" << type; ss.str();}));
   return LouvainEdgeWeight::uniform;
 }
 
@@ -624,8 +611,7 @@ static Mode modeFromString(const std::string& mode) {
   } else if (mode == "direct") {
     return Mode::direct_kway;
   }
-  LOG << "Illegal option:" << mode;
-  exit(0);
+    throw std::runtime_error(({std::stringstream ss; ss << "Illegal option:" << mode; ss.str();}));
   return Mode::direct_kway;
 }
 static FlowExecutionMode flowExecutionPolicyFromString(const std::string& mode) {
@@ -636,8 +622,7 @@ static FlowExecutionMode flowExecutionPolicyFromString(const std::string& mode) 
   } else if (mode == "exponential") {
     return FlowExecutionMode::exponential;
   }
-  LOG << "No valid flow execution mode.";
-  exit(0);
+    throw std::runtime_error(({std::stringstream ss; ss << "No valid flow execution mode."; ss.str();}));
   return FlowExecutionMode::exponential;
 }
 
@@ -647,8 +632,7 @@ static BinPackingAlgorithm binPackingAlgorithmFromString(const std::string& type
   } else if (type == "first_fit") {
     return BinPackingAlgorithm::first_fit;
   }
-  LOG << "Illegal option:" << type;
-  exit(0);
+    throw std::runtime_error(({std::stringstream ss; ss << "Illegal option:" << type; ss.str();}));
   return BinPackingAlgorithm::worst_fit;
 }
 }  // namespace kahypar

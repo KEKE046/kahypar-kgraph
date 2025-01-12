@@ -19,6 +19,7 @@
  ******************************************************************************/
 
 #pragma once
+#include<sstream>
 
 #include <array>
 #include <cctype>
@@ -640,8 +641,7 @@ static inline void sanityCheck(const Hypergraph& hypergraph, Context& context) {
       break;
   }
   if (context.partition.use_individual_part_weights && context.partition.max_part_weights.empty()) {
-    LOG << "Individual block weights not specified. Please use --blockweights to specify the weight of each block";
-    std::exit(0);
+        throw std::runtime_error(({std::stringstream ss; ss << "Individual block weights not specified. Please use --blockweights to specify the weight of each block"; ss.str();}));
   }
 
   if (!context.partition.use_individual_part_weights &&
@@ -668,15 +668,13 @@ static inline void sanityCheck(const Hypergraph& hypergraph, Context& context) {
   if (context.local_search.hyperflowcutter.snapshot_scaling > 1.0 &&
       context.local_search.hyperflowcutter.flowhypergraph_size_constraint != FlowHypergraphSizeConstraint::scaled_max_part_weight_fraction_minus_opposite_side) {
     LOG << "Scaling parameter for flow problem sizes > 1.0 only supported for --r-hfc-scaling = mf-style.";
-    LOG << "Either set --r-hfc-scaling = pw or set --r-hfc-size-constraint to a value between 0 and 1.";
-    std::exit(0);
+        throw std::runtime_error(({std::stringstream ss; ss << "Either set --r-hfc-scaling = pw or set --r-hfc-size-constraint to a value between 0 and 1."; ss.str();}));
   }
 
   if (context.local_search.hyperflowcutter.snapshot_scaling < 1.0 &&
       context.local_search.hyperflowcutter.flowhypergraph_size_constraint == FlowHypergraphSizeConstraint::scaled_max_part_weight_fraction_minus_opposite_side) {
     LOG << "Scaling parameter for flow problem sizes < 1.0 not supported for --r-hfc-scaling = mf-style.";
-    LOG << "Either set --r-hfc-scaling = pw or set --r-hfc-size-constraint to a value between 0 and 1.";
-    std::exit(0);
+        throw std::runtime_error(({std::stringstream ss; ss << "Either set --r-hfc-scaling = pw or set --r-hfc-size-constraint to a value between 0 and 1."; ss.str();}));
   }
 
   if (context.partition.use_individual_part_weights) {
@@ -690,8 +688,7 @@ static inline void sanityCheck(const Hypergraph& hypergraph, Context& context) {
                       context.partition.max_part_weights.end(),
                       0);
     if (sum_part_weights < hypergraph.totalWeight()) {
-      LOG << "Sum of individual part weights is less than sum of vertex weights";
-      std::exit(-1);
+            throw std::runtime_error(({std::stringstream ss; ss << "Sum of individual part weights is less than sum of vertex weights"; ss.str();}));
     }
   }
 
@@ -701,8 +698,7 @@ static inline void sanityCheck(const Hypergraph& hypergraph, Context& context) {
         context.local_search.algorithm == RefinementAlgorithm::kway_fm_hyperflow_cutter_km1) {
       LOG << "\nRefinement algorithm" << context.local_search.algorithm
           << "currently only works for connectivity (km1) optimization.";
-      LOG << "Please use the corresponding cut algorithm.";
-      std::exit(0);
+            throw std::runtime_error(({std::stringstream ss; ss << "Please use the corresponding cut algorithm."; ss.str();}));
     }
   } else if (context.partition.mode == Mode::direct_kway &&
              context.partition.objective == Objective::km1) {
@@ -710,8 +706,7 @@ static inline void sanityCheck(const Hypergraph& hypergraph, Context& context) {
         context.local_search.algorithm == RefinementAlgorithm::kway_fm_hyperflow_cutter) {
       LOG << "\nRefinement algorithm" << context.local_search.algorithm
           << "currently only works for cut optimization.";
-      LOG << "Please use the corresponding connectivity (km1) algorithm.";
-      std::exit(0);
+            throw std::runtime_error(({std::stringstream ss; ss << "Please use the corresponding connectivity (km1) algorithm."; ss.str();}));
     }
   }
 

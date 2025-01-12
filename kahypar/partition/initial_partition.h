@@ -19,6 +19,7 @@
  ******************************************************************************/
 
 #pragma once
+#include<sstream>
 
 #include <limits>
 #include <vector>
@@ -90,8 +91,7 @@ static inline Context createContext(const Hypergraph& hg,
           context.partition.mode = Mode::direct_kway;
           break;
         default:
-          LOG << "Invalid IP mode";
-          std::exit(-1);
+                    throw std::runtime_error(({std::stringstream ss; ss << "Invalid IP mode"; ss.str();}));
       }
       context.local_search.algorithm = context.initial_partitioning.local_search.algorithm;
       break;
@@ -114,13 +114,11 @@ static inline Context createContext(const Hypergraph& hg,
           context.partition.mode = Mode::direct_kway;
           break;
         default:
-          LOG << "Invalid IP mode";
-          std::exit(-1);
+                    throw std::runtime_error(({std::stringstream ss; ss << "Invalid IP mode"; ss.str();}));
       }
       break;
     default:
-      LOG << "Invalid IP technique";
-      std::exit(-1);
+            throw std::runtime_error(({std::stringstream ss; ss << "Invalid IP technique"; ss.str();}));
   }
   // We are now in initial partitioning mode, i.e. the next call to partition
   // will actually trigger the computation of an initial partition of the hypergraph.

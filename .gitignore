@@ -26,3 +26,5 @@ external_tools/*
 !external_tools/primes
 .idea*
 /.cache
+/dist
+/*.egg-info
