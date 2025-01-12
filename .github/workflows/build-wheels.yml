@@ -4,16 +4,15 @@ on:
   workflow_dispatch:
   pull_request:
   push:
-    branches:
-      - master
-  release:
-    types:
-      - published
+
 
 jobs:
   build_wheels:
     name: Build wheels on ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
+    env:
+      KAHYPAR_USE_MINIMAL_BOOST: ON
+
     strategy:
       matrix:
         # macos-13 is an intel runner, macos-14 is apple silicon
